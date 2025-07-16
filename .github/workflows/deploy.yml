@@ -1,0 +1,52 @@
+name: Terraform Azure VM Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Check for Lock
+      run: |
+        lease_status=$(az storage blob show \
+          --container-name tfstate \
+          --name prod.terraform.tfstate \
+          --account-name mytfstateaccount \
+          --query "properties.lease.status" \
+          --output tsv)
+
+        if [ "$lease_status" == "locked" ]; then
+          echo "Terraform state is locked. Exiting..."
+          exit 1
+        fi
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+
+    - name: Lock tfstate
+      run: |
+        az storage blob lease acquire \
+          --container-name tfstate \
+          --blob-name prod.terraform.tfstate \
+          --account-name mytfstateaccount \
+          --duration infinite
