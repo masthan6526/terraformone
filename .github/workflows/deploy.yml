@@ -32,7 +32,7 @@ jobs:
         lease_status=$(az storage blob show \
           --container-name tfstate \
           --name prod.terraform.tfstate \
-          --account-name mytfstateaccount \
+          --account-name mytfstateaccount1 \
           --query "properties.lease.status" \
           --output tsv)
 
@@ -49,5 +49,5 @@ jobs:
         az storage blob lease acquire \
           --container-name tfstate \
           --blob-name prod.terraform.tfstate \
-          --account-name mytfstateaccount \
+          --account-name mytfstateaccount1 \
           --duration infinite
