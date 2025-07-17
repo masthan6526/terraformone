@@ -1,3 +1,10 @@
+name: Secondary Deployment
+
+
+on:
+  workflow_dispatch:
+
+
 - name: Check for Lock
   id: check_lock
   run: |
