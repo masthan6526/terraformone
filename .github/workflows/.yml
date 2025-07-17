@@ -1,0 +1,36 @@
+- name: Check for Lock
+  id: check_lock
+  run: |
+    lease_status=$(az storage blob show \
+      --container-name tfstate \
+      --name terraform.tfstate \
+      --account-name mytfstateaccount1 \
+      --query "properties.lease.status" \
+      --output tsv)
+    if [ "$lease_status" == "locked" ]; then
+      echo "Terraform state is locked. Exiting..."
+      exit 1
+    fi
+
+- name: Acquire Lease Lock
+  id: acquire_lock
+  run: |
+    lease_id=$(az storage blob lease acquire \
+      --container-name tfstate \
+      --blob-name terraform.tfstate \
+      --account-name mytfstateaccount1 \
+      --duration infinite \
+      --query leaseId -o tsv)
+    echo "LEASE_ID=$lease_id" >> $GITHUB_ENV
+
+- name: Terraform Apply
+  run: terraform apply -auto-approve
+
+- name: Release Lease Lock
+  if: always()
+  run: |
+    az storage blob lease release \
+      --container-name tfstate \
+      --blob-name terraform.tfstate \
+      --account-name mytfstateaccount1 \
+      --lease-id $LEASE_ID
