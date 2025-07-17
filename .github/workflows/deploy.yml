@@ -47,4 +47,4 @@ jobs:
           --container-name tfstate \
           --blob-name .terraform.lock.hcl \
           --account-name mytfstateaccount1 \
-          --duration 20
+          --duration 15
