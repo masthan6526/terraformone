@@ -12,7 +12,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "example" {
-  name     = "example-rg5"
+  name     = "example-rg6"
   location = "East US"
 }
 
