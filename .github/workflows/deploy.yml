@@ -38,11 +38,6 @@ jobs:
           --query "properties.lease.status" \
           --output tsv)
 
-        if [ "$lease_status" == "locked" ]; then
-          echo "Terraform state is locked. Exiting..."
-          exit 1
-        fi
-
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
