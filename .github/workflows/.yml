@@ -8,10 +8,7 @@
       --auth-mode login \
       --query "properties.lease.status" \
       --output tsv)
-    if [ "$lease_status" == "locked" ]; then
-      echo "Terraform state is locked. Exiting..."
-      exit 1
-    fi
+      
 
 - name: Acquire Lease Lock
   id: acquire_lock
