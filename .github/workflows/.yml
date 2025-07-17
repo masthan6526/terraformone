@@ -5,6 +5,7 @@
       --container-name tfstate \
       --name terraform.tfstate \
       --account-name mytfstateaccount1 \
+      --auth-mode login \
       --query "properties.lease.status" \
       --output tsv)
     if [ "$lease_status" == "locked" ]; then
@@ -19,6 +20,7 @@
       --container-name tfstate \
       --blob-name terraform.tfstate \
       --account-name mytfstateaccount1 \
+      --auth-mode login \
       --duration infinite \
       --query leaseId -o tsv)
     echo "LEASE_ID=$lease_id" >> $GITHUB_ENV
@@ -33,4 +35,5 @@
       --container-name tfstate \
       --blob-name terraform.tfstate \
       --account-name mytfstateaccount1 \
+      --auth-mode login \
       --lease-id $LEASE_ID
