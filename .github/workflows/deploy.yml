@@ -1,7 +1,5 @@
 name: Terraform Azure VM Deployment
 
-
-
 on:
   push:
     branches:
@@ -25,28 +23,28 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-
     - name: Terraform Init
       run: terraform init
 
-    - name: Check for Lock
+    - name: Acquire Blob Lease (Lock)
+      id: acquire_lock
       run: |
-        lease_status=$(az storage blob show \
+        lease_id=$(az storage blob lease acquire \
           --container-name tfstate \
-          --name .terraform.lock.hcl \
-          --name terraform.tfvars \
+          --blob-name terraform.tfstate \
           --account-name mytfstateaccount1 \
-          --query "properties.lease.status" \
+          --query leaseId \
           --output tsv)
+        echo "lease_id=$lease_id" >> $GITHUB_OUTPUT
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Lock tfstate
+    - name: Release Blob Lease (Unlock)
+      if: always()
       run: |
-        az storage blob lease acquire \
+        az storage blob lease release \
           --container-name tfstate \
-          --blob-name .terraform.lock.hcl \
-          --blob-name terraform.tfvars \
+          --blob-name terraform.tfstate \
           --account-name mytfstateaccount1 \
-        
+          --lease-id ${{ steps.acquire_lock.outputs.lease_id }}
