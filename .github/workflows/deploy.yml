@@ -53,6 +53,6 @@ jobs:
           --account-name mytfstateaccount1 \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --container-name tfstate \
-          --name terraform.tfstate \
-          --file terraform.tfstate \
+          --name terraform.tfstate1 \
+          --file terraform.tfstate1 \
           --overwrite
