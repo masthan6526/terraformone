@@ -26,25 +26,24 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Acquire Blob Lease (Lock)
-      id: acquire_lock
+    - name: Create Blob Container if not exists
       run: |
-        lease_id=$(az storage blob lease acquire \
-          --container-name tfstate \
-          --blob-name terraform.tfstate \
+        az storage container create \
+          --name tfstate \
           --account-name mytfstateaccount1 \
-          --query leaseId \
-          --output tsv)
-        echo "lease_id=$lease_id" >> $GITHUB_OUTPUT
+          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
+          --output none || true
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Release Blob Lease (Unlock)
-      if: always()
+    - name: Upload Terraform State to Blob
       run: |
-        az storage blob lease release \
-          --container-name tfstate \
-          --blob-name terraform.tfstate \
+        az storage blob upload \
           --account-name mytfstateaccount1 \
-          --lease-id ${{ steps.acquire_lock.outputs.lease_id }}
+          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
+          --container-name tfstate \
+          --name terraform.tfstate \
+          --file terraform.tfstate \
+          --overwrite
+
