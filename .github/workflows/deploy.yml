@@ -37,17 +37,8 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Upload Terraform State to Blob
-      run: |
-        az storage blob upload \
-          --account-name mytfstateaccount1 \
-          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
-          --container-name tfstate \
-          --name terraform.tfstate \
-          --file terraform.tfstate \
-          --overwrite
-
     - name: Acquire Blob Lease (Lock)
+      if: success()
       id: acquire_lock
       run: |
         lease_id=$(az storage blob lease acquire \
@@ -58,13 +49,3 @@ jobs:
           --query leaseId \
           --output tsv)
         echo "lease_id=$lease_id" >> $GITHUB_OUTPUT
-
-    - name: Release Blob Lease (Unlock)
-      if: always()
-      run: |
-        az storage blob lease release \
-          --container-name tfstate \
-          --blob-name terraform.tfstate \
-          --account-name mytfstateaccount1 \
-          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
-          --lease-id ${{ steps.acquire_lock.outputs.lease_id }}
