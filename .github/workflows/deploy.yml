@@ -34,16 +34,6 @@ jobs:
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --output none || true
 
-    - name: Terraform Force Unlock (if needed)
-      run: |
-        LOCK_ID=$(terraform show -json | jq -r '.values.root_module.resources[]? | select(.type=="terraform_remote_state") | .instances[0].attributes.lock_id // empty')
-        if [ ! -z "$LOCK_ID" ]; then
-          echo "Unlocking Terraform state with LOCK_ID: $LOCK_ID"
-          terraform force-unlock -force "$LOCK_ID"
-        else
-          echo "No lock detected. Skipping unlock."
-        fi
-
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
@@ -56,3 +46,11 @@ jobs:
           --name terraform.tfstate1 \
           --file terraform.tfstate1 \
           --overwrite
+
+    - name: Break Lease on Terraform State Blob
+      run: |
+        az storage blob lease break \
+          --account-name mytfstateaccount1 \
+          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
+          --container-name tfstate \
+          --blob-name terraform.tfstate1
