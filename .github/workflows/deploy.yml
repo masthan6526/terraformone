@@ -37,6 +37,7 @@ jobs:
     - name: Terraform Force Unlock (if needed)
       run: |
         LOCK_ID=$(terraform show -json | jq -r '.values.root_module.resources[]? | select(.type=="terraform_remote_state") | .instances[0].attributes.lock_id // empty')
+        echo "Lock id: $LOCK_ID"
         if [ ! -z "$LOCK_ID" ]; then
           echo "Unlocking Terraform state with LOCK_ID: $LOCK_ID"
           terraform force-unlock -force "$LOCK_ID"
