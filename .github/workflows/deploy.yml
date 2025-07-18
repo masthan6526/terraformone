@@ -34,18 +34,25 @@ jobs:
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --output none || true
 
+    - name: Terraform Force Unlock (if needed)
+      run: |
+        LOCK_ID=$(terraform show -json | jq -r '.values.root_module.resources[]? | select(.type=="terraform_remote_state") | .instances[0].attributes.lock_id // empty')
+        if [ ! -z "$LOCK_ID" ]; then
+          echo "Unlocking Terraform state with LOCK_ID: $LOCK_ID"
+          terraform force-unlock -force "$LOCK_ID"
+        else
+          echo "No lock detected. Skipping unlock."
+        fi
+
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Acquire Blob Lease (Lock)
-      if: success()
-      id: acquire_lock
+    - name: Upload Terraform State to Blob
       run: |
-        lease_id=$(az storage blob lease acquire \
-          --container-name tfstate \
-          --blob-name terraform.tfstate \
+        az storage blob upload \
           --account-name mytfstateaccount1 \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
-          --query leaseId \
-          --output tsv)
-        echo "lease_id=$lease_id" >> $GITHUB_OUTPUT
+          --container-name tfstate \
+          --name terraform.tfstate \
+          --file terraform.tfstate \
+          --overwrite
