@@ -43,8 +43,8 @@ jobs:
           --account-name mytfstateaccount1 \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --container-name tfstate \
-          --name terraform.tfstate1 \
-          --file terraform.tfstate1 \
+          --name terraform.tf \
+          --file terraform.tf \
           --overwrite
 
     - name: Break Lease on Terraform State Blob
@@ -53,4 +53,4 @@ jobs:
           --account-name mytfstateaccount1 \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --container-name tfstate \
-          --blob-name terraform.tfstate1
+          --blob-name terraform.tf
