@@ -34,8 +34,8 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
+   # - name: Terraform Apply
+   #   run: terraform apply -auto-approve
 
     # Optional: Detect and clean stale lock if apply fails
     - name: Check and Remove Stale Lock (Optional)
@@ -49,6 +49,9 @@ jobs:
           --name .terraform.tfstate.lock.info \
           --query exists \
           --output tsv)
+
+        - name: Terraform Apply
+          run: terraform apply -auto-approve
 
         if [ "$LOCK_EXISTS" = "true" ]; then
           echo "Stale lock detected. Removing..."
