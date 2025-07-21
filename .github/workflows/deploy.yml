@@ -23,9 +23,6 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Terraform Init
-      run: terraform init
-
     - name: Create Blob Container if not exists
       run: |
         az storage container create \
@@ -34,26 +31,32 @@ jobs:
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --output none || true
 
-    - name: Terraform Force Unlock (if needed)
-      run: |
-        LOCK_ID=$(terraform show -json | jq -r '.values.root_module.resources[]? | select(.type=="terraform_remote_state") | .instances[0].attributes.lock_id // empty')
-        echo "Lock id: $LOCK_ID"
-        if [ ! -z "$LOCK_ID" ]; then
-          echo "Unlocking Terraform state with LOCK_ID: $LOCK_ID"
-          terraform force-unlock -force "$LOCK_ID"
-        else
-          echo "No lock detected. Skipping unlock."
-        fi
+    - name: Terraform Init
+      run: terraform init
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
-    - name: Upload Terraform State to Blob
+    # Optional: Detect and clean stale lock if apply fails
+    - name: Check and Remove Stale Lock (Optional)
+      if: failure()
       run: |
-        az storage blob upload \
+        echo "Checking for stale lock..."
+        LOCK_EXISTS=$(az storage blob exists \
           --account-name mytfstateaccount1 \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
           --container-name tfstate \
-          --name terraform.tfstate \
-          --file terraform.tfstate \
-          --overwrite
+          --name .terraform.tfstate.lock.info \
+          --query exists \
+          --output tsv)
+
+        if [ "$LOCK_EXISTS" = "true" ]; then
+          echo "Stale lock detected. Removing..."
+          az storage blob delete \
+            --account-name mytfstateaccount1 \
+            --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }} \
+            --container-name tfstate \
+            --name .terraform.tfstate.lock.info
+        else
+          echo "No stale lock found."
+        fi
